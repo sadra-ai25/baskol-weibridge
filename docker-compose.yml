@@ -1,0 +1,20 @@
+services:
+  weighbridge-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: weighbridge_monitor:latest
+    container_name: weighbridge-api
+    restart: unless-stopped
+
+    ports:
+      - "4001:4001"
+
+    volumes:
+      - ./src:/app/src
+      - ./configs:/app/configs
+      - ./outputs:/app/outputs
+      - ./weights:/app/weights
+
+    environment:
+      - PYTHONUNBUFFERED=1

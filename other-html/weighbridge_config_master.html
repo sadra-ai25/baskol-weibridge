@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ابزار تنظیم باسکول - Weighbridge Configuration Master</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #667eea;
+        }
+
+        .step-header h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .step-header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 25px 0;
+            text-align: center;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .points-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .points-list h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .point-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            margin-right: 20px;
+            color: #856404;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.5s;
+        }
+
+        .config-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .config-preview pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 2px solid #17a2b8;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #0c5460;
+        }
+
+        .crop-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .crop-info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .crop-info-item strong {
+            display: block;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ ابزار تنظیم جامع باسکول</h1>
+            <p>Weighbridge Configuration Master Tool</p>
+        </div>
+
+        <div class="content">
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+
+            <!-- Step 1: Initial Setup -->
+            <div class="step active" id="step1">
+                <div class="step-header">
+                    <h2>مرحله 1: تنظیمات اولیه</h2>
+                    <p>انتخاب تصویر پایه و شماره باسکول</p>
+                </div>
+
+                <div class="form-group">
+                    <label>📷 انتخاب تصویر پایه:</label>
+                    <select id="baseImageSelect">
+                        <option value="">-- یک تصویر انتخاب کنید --</option>
+                        <option value="base-images/bask1_up.jpg">باسکول 1 (bask1_up.jpg)</option>
+                        <option value="base-images/bask2_up.jpg">باسکول 3 (bask2_up.jpg)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>🔢 شماره باسکول (Weighbridge ID):</label>
+                    <select id="weighbridgeId">
+                        <option value="">-- انتخاب کنید --</option>
+                        <option value="1">باسکول 1</option>
+                        <option value="3">باسکول 3</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 نام باسکول (فارسی):</label>
+                    <input type="text" id="weighbridgeName" placeholder="مثال: باسکول 1" />
+                </div>
+
+                <div class="info-box">
+                    <strong>ℹ️ راهنما:</strong>
+                    <ul>
+                        <li>تصویر پایه باید 1920x1080 باشد</li>
+                        <li>شماره باسکول با نام تصویر مطابقت داشته باشد</li>
+                        <li>نام باسکول را به فارسی وارد کنید</li>
+                    </ul>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-primary" onclick="loadImage()">بارگذاری تصویر و ادامه ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Crop ROI -->
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <h2>مرحله 2: انتخاب ناحیه کراپ (Crop ROI)</h2>
+                    <p>مستطیل ناحیه نمایش را مشخص کنید</p>
+                </div>
+
+                <div class="instructions">
+                    <h3>📋 دستورالعمل:</h3>
+                    <ul>
+                        <li>روی تصویر کلیک کنید و مستطیل را بکشید</li>
+                        <li>ناحیه کراپ شامل هر دو منطقه (زرد و قرمز) باشد</li>
+                        <li>برای رسم مجدد روی "پاک کردن" کلیک کنید</li>
+                    </ul>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="cropCanvas"></canvas>
+                </div>
+
+                <div class="crop-info" id="cropInfo"></div>
+
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">⬅️ بازگشت</button>
+                    <button class="btn btn-danger" onclick="clearCrop()">🗑️ پاک کردن</button>
+                    <button class="btn btn-primary" onclick="applyCrop()" id="applyCropBtn" disabled>تأیید و ادامه ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Cropped Preview -->
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <h2>مرحله 3: پیش‌نمایش تصویر کراپ شده</h2>
+                    <p>بررسی نتیجه کراپ و آماده‌سازی برای رسم مناطق</p>
+                </div>
+
+                <div class="alert alert-success">
+                    ✅ تصویر با موفقیت کراپ شد. اکنون می‌توانید مناطق را مشخص کنید.
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="croppedCanvas"></canvas>
+                </div>
+
+                <div class="crop-info" id="croppedInfo"></div>
+
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">⬅️ بازگشت</button>
+                    <button class="btn btn-primary" onclick="goToStep(4)">شروع رسم مناطق ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Scale Area (Yellow) -->
+            <div class="step" id="step4">
+                <div class="step-header">
+                    <h2>مرحله 4: ناحیه باسکول (Scale Area - زرد)</h2>
+                    <p>نقاط محدوده باسکول را مشخص کنید</p>
+                </div>
+
+                <div class="instructions">
+                    <h3>📋 دستورالعمل:</h3>
+                    <ul>
+                        <li>روی هر نقطه از محیط ناحیه باسکول کلیک کنید</li>
+                        <li>به ترتیب ساعتگرد نقاط را علامت بزنید</li>
+                        <li>حداقل 4 نقطه لازم است</li>
+                        <li>برای حذف آخرین نقطه روی "حذف آخرین نقطه" کلیک کنید</li>
+                    </ul>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="scaleCanvas"></canvas>
+                </div>
+
+                <div class="points-list" id="scalePointsList">
+                    <h3>🟡 نقاط ناحیه باسکول: <span id="scalePointsCount">0</span></h3>
+                    <div id="scalePointsItems"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(3)">⬅️ بازگشت</button>
+                    <button class="btn btn-danger" onclick="removeLastPoint('scale')">↩️ حذف آخرین نقطه</button>
+                    <button class="btn btn-danger" onclick="clearArea('scale')">🗑️ پاک کردن همه</button>
+                    <button class="btn btn-primary" onclick="goToStep(5)" id="scaleNextBtn" disabled>تأیید و ادامه ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Prohibited Zone (Red) -->
+            <div class="step" id="step5">
+                <div class="step-header">
+                    <h2>مرحله 5: منطقه ممنوع (Prohibited Zone - قرمز)</h2>
+                    <p>نقاط محدوده منطقه ممنوع را مشخص کنید</p>
+                </div>
+
+                <div class="instructions">
+                    <h3>📋 دستورالعمل:</h3>
+                    <ul>
+                        <li>روی هر نقطه از محیط منطقه ممنوع کلیک کنید</li>
+                        <li>این منطقه باید بزرگتر از ناحیه باسکول باشد</li>
+                        <li>به ترتیب ساعتگرد نقاط را علامت بزنید</li>
+                        <li>حداقل 4 نقطه لازم است</li>
+                    </ul>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="prohibitedCanvas"></canvas>
+                </div>
+
+                <div class="points-list" id="prohibitedPointsList">
+                    <h3>🔴 نقاط منطقه ممنوع: <span id="prohibitedPointsCount">0</span></h3>
+                    <div id="prohibitedPointsItems"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(4)">⬅️ بازگشت</button>
+                    <button class="btn btn-danger" onclick="removeLastPoint('prohibited')">↩️ حذف آخرین نقطه</button>
+                    <button class="btn btn-danger" onclick="clearArea('prohibited')">🗑️ پاک کردن همه</button>
+                    <button class="btn btn-primary" onclick="goToStep(6)" id="prohibitedNextBtn" disabled>تأیید و ادامه ➡️</button>
+                </div>
+            </div>
+
+            <!-- Step 6: Final Preview and Save -->
+            <div class="step" id="step6">
+                <div class="step-header">
+                    <h2>مرحله 6: پیش‌نمایش نهایی و ذخیره</h2>
+                    <p>بررسی تنظیمات و ذخیره فایل کانفیگ</p>
+                </div>
+
+                <div class="alert alert-success">
+                    ✅ تمامی تنظیمات با موفقیت انجام شد. پیش‌نمایش نهایی را بررسی کنید.
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="finalCanvas"></canvas>
+                </div>
+
+                <div class="config-preview">
+                    <h3>📄 پیش‌نمایش فایل Config:</h3>
+                    <pre id="configPreview"></pre>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(5)">⬅️ بازگشت</button>
+                    <button class="btn btn-success" onclick="saveConfig()">💾 ذخیره فایل Config</button>
+                </div>
+            </div>
+
+            <!-- Step 7: Success -->
+            <div class="step" id="step7">
+                <div class="step-header">
+                    <h2>✅ تکمیل موفق</h2>
+                    <p>فایل کانفیگ با موفقیت ایجاد شد</p>
+                </div>
+
+                <div class="alert alert-success">
+                    <h3>🎉 تبریک! تنظیمات با موفقیت ذخیره شد</h3>
+                    <p>فایل کانفیگ آماده استفاده است.</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>📋 خلاصه تنظیمات:</h3>
+                    <div id="summaryInfo"></div>
+                </div>
+
+                <div class="config-preview">
+                    <h3>📥 دانلود فایل Config:</h3>
+                    <p id="downloadInfo"></p>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-primary" onclick="location.reload()">🔄 تنظیم باسکول جدید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentStep = 1;
+        let baseImage = null;
+        let croppedImage = null;
+        let config = {
+            weighbridge_id: null,
+            weighbridge_name: "",
+            camera: "UP",
+            original_image_size: [1920, 1080],
+            crop_roi: null,
+            areas: {
+                scale_area: {
+                    name: "Scale Area",
+                    name_fa: "ناحیه باسکول",
+                    description: "Yellow boundary area (coordinates relative to ORIGINAL image 1920x1080)",
+                    num_points: 0,
+                    points: []
+                },
+                prohibited_zone: {
+                    name: "Prohibited Zone",
+                    name_fa: "منطقه ممنوع",
+                    description: "Larger boundary (coordinates relative to ORIGINAL image 1920x1080)",
+                    num_points: 0,
+                    points: []
+                }
+            }
+        };
+
+        let cropRect = { startX: 0, startY: 0, endX: 0, endY: 0, isDrawing: false };
+        let scalePoints = [];
+        let prohibitedPoints = [];
+
+        // Step navigation
+        function goToStep(step) {
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            document.getElementById('step' + step).classList.add('active');
+            currentStep = step;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / 7) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // Load base image
+        function loadImage() {
+            const imagePath = document.getElementById('baseImageSelect').value;
+            const wbId = document.getElementById('weighbridgeId').value;
+            const wbName = document.getElementById('weighbridgeName').value;
+
+            if (!imagePath || !wbId || !wbName) {
+                alert('لطفاً تمامی فیلدها را پر کنید');
+                return;
+            }
+
+            config.weighbridge_id = parseInt(wbId);
+            config.weighbridge_name = wbName;
+
+            baseImage = new Image();
+            baseImage.onload = function() {
+                config.original_image_size = [baseImage.width, baseImage.height];
+                setupCropCanvas();
+                goToStep(2);
+            };
+            baseImage.onerror = function() {
+                alert('خطا در بارگذاری تصویر. لطفاً مسیر فایل را بررسی کنید.');
+            };
+            baseImage.src = imagePath;
+        }
+
+        // Crop canvas setup
+        function setupCropCanvas() {
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1200;
+            const scale = Math.min(1, maxWidth / baseImage.width);
+            canvas.width = baseImage.width * scale;
+            canvas.height = baseImage.height * scale;
+
+            ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+
+            canvas.onmousedown = startCropDraw;
+            canvas.onmousemove = drawCropRect;
+            canvas.onmouseup = endCropDraw;
+        }
+
+        function startCropDraw(e) {
+            const rect = e.target.getBoundingClientRect();
+            const scaleX = baseImage.width / e.target.width;
+            const scaleY = baseImage.height / e.target.height;
+
+            cropRect.startX = (e.clientX - rect.left) * scaleX;
+            cropRect.startY = (e.clientY - rect.top) * scaleY;
+            cropRect.isDrawing = true;
+        }
+
+        function drawCropRect(e) {
+            if (!cropRect.isDrawing) return;
+
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            const rect = e.target.getBoundingClientRect();
+            const scaleX = baseImage.width / e.target.width;
+            const scaleY = baseImage.height / e.target.height;
+
+            cropRect.endX = (e.clientX - rect.left) * scaleX;
+            cropRect.endY = (e.clientY - rect.top) * scaleY;
+
+            // Redraw
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(baseImage, 0, 0, canvas.width, canvas.height);
+
+            // Draw rectangle
+            const displayScaleX = canvas.width / baseImage.width;
+            const displayScaleY = canvas.height / baseImage.height;
+
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(
+                cropRect.startX * displayScaleX,
+                cropRect.startY * displayScaleY,
+                (cropRect.endX - cropRect.startX) * displayScaleX,
+                (cropRect.endY - cropRect.startY) * displayScaleY
+            );
+
+            updateCropInfo();
+        }
+
+        function endCropDraw() {
+            cropRect.isDrawing = false;
+            if (Math.abs(cropRect.endX - cropRect.startX) > 10 && Math.abs(cropRect.endY - cropRect.startY) > 10) {
+                document.getElementById('applyCropBtn').disabled = false;
+            }
+        }
+
+        function updateCropInfo() {
+            const x1 = Math.min(cropRect.startX, cropRect.endX);
+            const y1 = Math.min(cropRect.startY, cropRect.endY);
+            const x2 = Math.max(cropRect.startX, cropRect.endX);
+            const y2 = Math.max(cropRect.startY, cropRect.endY);
+            const width = Math.abs(x2 - x1);
+            const height = Math.abs(y2 - y1);
+
+            document.getElementById('cropInfo').innerHTML = `
+                <div class="crop-info-item"><strong>X1:</strong> ${Math.round(x1)}</div>
+                <div class="crop-info-item"><strong>Y1:</strong> ${Math.round(y1)}</div>
+                <div class="crop-info-item"><strong>X2:</strong> ${Math.round(x2)}</div>
+                <div class="crop-info-item"><strong>Y2:</strong> ${Math.round(y2)}</div>
+                <div class="crop-info-item"><strong>عرض:</strong> ${Math.round(width)}</div>
+                <div class="crop-info-item"><strong>ارتفاع:</strong> ${Math.round(height)}</div>
+            `;
+        }
+
+        function clearCrop() {
+            cropRect = { startX: 0, startY: 0, endX: 0, endY: 0, isDrawing: false };
+            setupCropCanvas();
+            document.getElementById('cropInfo').innerHTML = '';
+            document.getElementById('applyCropBtn').disabled = true;
+        }
+
+        function applyCrop() {
+            const x1 = Math.round(Math.min(cropRect.startX, cropRect.endX));
+            const y1 = Math.round(Math.min(cropRect.startY, cropRect.endY));
+            const x2 = Math.round(Math.max(cropRect.startX, cropRect.endX));
+            const y2 = Math.round(Math.max(cropRect.startY, cropRect.endY));
+            const width = x2 - x1;
+            const height = y2 - y1;
+
+            config.crop_roi = {
+                x1: x1,
+                y1: y1,
+                x2: x2,
+                y2: y2,
+                width: width,
+                height: height,
+                description: "Region to crop for display output"
+            };
+
+            // Create cropped image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(baseImage, x1, y1, width, height, 0, 0, width, height);
+
+            croppedImage = new Image();
+            croppedImage.onload = function() {
+                showCroppedPreview();
+                goToStep(3);
+            };
+            croppedImage.src = canvas.toDataURL();
+        }
+
+        function showCroppedPreview() {
+            const canvas = document.getElementById('croppedCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1200;
+            const scale = Math.min(1, maxWidth / croppedImage.width);
+            canvas.width = croppedImage.width * scale;
+            canvas.height = croppedImage.height * scale;
+
+            ctx.drawImage(croppedImage, 0, 0, canvas.width, canvas.height);
+
+            document.getElementById('croppedInfo').innerHTML = `
+                <div class="crop-info-item"><strong>عرض:</strong> ${croppedImage.width}px</div>
+                <div class="crop-info-item"><strong>ارتفاع:</strong> ${croppedImage.height}px</div>
+                <div class="crop-info-item"><strong>مبدأ X:</strong> ${config.crop_roi.x1}</div>
+                <div class="crop-info-item"><strong>مبدأ Y:</strong> ${config.crop_roi.y1}</div>
+            `;
+        }
+
+        // Scale area drawing
+        function setupScaleCanvas() {
+            const canvas = document.getElementById('scaleCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1200;
+            const scale = Math.min(1, maxWidth / croppedImage.width);
+            canvas.width = croppedImage.width * scale;
+            canvas.height = croppedImage.height * scale;
+
+            drawScaleArea();
+
+            canvas.onclick = function(e) {
+                const rect = e.target.getBoundingClientRect();
+                const scaleX = croppedImage.width / canvas.width;
+                const scaleY = croppedImage.height / canvas.height;
+
+                // Convert to original image coordinates
+                const x = Math.round((e.clientX - rect.left) * scaleX + config.crop_roi.x1);
+                const y = Math.round((e.clientY - rect.top) * scaleY + config.crop_roi.y1);
+
+                scalePoints.push([x, y]);
+                drawScaleArea();
+                updateScalePointsList();
+            };
+        }
+
+        function drawScaleArea() {
+            const canvas = document.getElementById('scaleCanvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(croppedImage, 0, 0, canvas.width, canvas.height);
+
+            if (scalePoints.length > 0) {
+                const displayScaleX = canvas.width / croppedImage.width;
+                const displayScaleY = canvas.height / croppedImage.height;
+                const cropX = config.crop_roi.x1;
+                const cropY = config.crop_roi.y1;
+
+                ctx.strokeStyle = '#ffff00';
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.1)';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                scalePoints.forEach((pt, i) => {
+                    const x = (pt[0] - cropX) * displayScaleX;
+                    const y = (pt[1] - cropY) * displayScaleY;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+
+                // Draw points
+                scalePoints.forEach((pt, i) => {
+                    const x = (pt[0] - cropX) * displayScaleX;
+                    const y = (pt[1] - cropY) * displayScaleY;
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillText(i + 1, x + 10, y - 10);
+                });
+            }
+        }
+
+        function updateScalePointsList() {
+            document.getElementById('scalePointsCount').textContent = scalePoints.length;
+
+            let html = '';
+            scalePoints.forEach((pt, i) => {
+                html += `<div class="point-item">نقطه ${i + 1}: [${pt[0]}, ${pt[1]}]</div>`;
+            });
+            document.getElementById('scalePointsItems').innerHTML = html;
+
+            document.getElementById('scaleNextBtn').disabled = scalePoints.length < 4;
+        }
+
+        function removeLastPoint(type) {
+            if (type === 'scale' && scalePoints.length > 0) {
+                scalePoints.pop();
+                drawScaleArea();
+                updateScalePointsList();
+            } else if (type === 'prohibited' && prohibitedPoints.length > 0) {
+                prohibitedPoints.pop();
+                drawProhibitedArea();
+                updateProhibitedPointsList();
+            }
+        }
+
+        function clearArea(type) {
+            if (type === 'scale') {
+                scalePoints = [];
+                drawScaleArea();
+                updateScalePointsList();
+            } else if (type === 'prohibited') {
+                prohibitedPoints = [];
+                drawProhibitedArea();
+                updateProhibitedPointsList();
+            }
+        }
+
+        // Prohibited zone drawing
+        function setupProhibitedCanvas() {
+            const canvas = document.getElementById('prohibitedCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1200;
+            const scale = Math.min(1, maxWidth / croppedImage.width);
+            canvas.width = croppedImage.width * scale;
+            canvas.height = croppedImage.height * scale;
+
+            drawProhibitedArea();
+
+            canvas.onclick = function(e) {
+                const rect = e.target.getBoundingClientRect();
+                const scaleX = croppedImage.width / canvas.width;
+                const scaleY = croppedImage.height / canvas.height;
+
+                const x = Math.round((e.clientX - rect.left) * scaleX + config.crop_roi.x1);
+                const y = Math.round((e.clientY - rect.top) * scaleY + config.crop_roi.y1);
+
+                prohibitedPoints.push([x, y]);
+                drawProhibitedArea();
+                updateProhibitedPointsList();
+            };
+        }
+
+        function drawProhibitedArea() {
+            const canvas = document.getElementById('prohibitedCanvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(croppedImage, 0, 0, canvas.width, canvas.height);
+
+            // Draw scale area first (background)
+            if (scalePoints.length > 0) {
+                const displayScaleX = canvas.width / croppedImage.width;
+                const displayScaleY = canvas.height / croppedImage.height;
+                const cropX = config.crop_roi.x1;
+                const cropY = config.crop_roi.y1;
+
+                ctx.strokeStyle = '#ffff00';
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.1)';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                scalePoints.forEach((pt, i) => {
+                    const x = (pt[0] - cropX) * displayScaleX;
+                    const y = (pt[1] - cropY) * displayScaleY;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+            }
+
+            // Draw prohibited zone
+            if (prohibitedPoints.length > 0) {
+                const displayScaleX = canvas.width / croppedImage.width;
+                const displayScaleY = canvas.height / croppedImage.height;
+                const cropX = config.crop_roi.x1;
+                const cropY = config.crop_roi.y1;
+
+                ctx.strokeStyle = '#ff0000';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                prohibitedPoints.forEach((pt, i) => {
+                    const x = (pt[0] - cropX) * displayScaleX;
+                    const y = (pt[1] - cropY) * displayScaleY;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+
+                // Draw points
+                prohibitedPoints.forEach((pt, i) => {
+                    const x = (pt[0] - cropX) * displayScaleX;
+                    const y = (pt[1] - cropY) * displayScaleY;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillText(i + 1, x + 10, y - 10);
+                });
+            }
+        }
+
+        function updateProhibitedPointsList() {
+            document.getElementById('prohibitedPointsCount').textContent = prohibitedPoints.length;
+
+            let html = '';
+            prohibitedPoints.forEach((pt, i) => {
+                html += `<div class="point-item">نقطه ${i + 1}: [${pt[0]}, ${pt[1]}]</div>`;
+            });
+            document.getElementById('prohibitedPointsItems').innerHTML = html;
+
+            document.getElementById('prohibitedNextBtn').disabled = prohibitedPoints.length < 4;
+        }
+
+        // Final preview and save
+        function setupFinalCanvas() {
+            config.areas.scale_area.points = scalePoints;
+            config.areas.scale_area.num_points = scalePoints.length;
+            config.areas.prohibited_zone.points = prohibitedPoints;
+            config.areas.prohibited_zone.num_points = prohibitedPoints.length;
+
+            const canvas = document.getElementById('finalCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const maxWidth = 1200;
+            const scale = Math.min(1, maxWidth / croppedImage.width);
+            canvas.width = croppedImage.width * scale;
+            canvas.height = croppedImage.height * scale;
+
+            ctx.drawImage(croppedImage, 0, 0, canvas.width, canvas.height);
+
+            const displayScaleX = canvas.width / croppedImage.width;
+            const displayScaleY = canvas.height / croppedImage.height;
+            const cropX = config.crop_roi.x1;
+            const cropY = config.crop_roi.y1;
+
+            // Draw prohibited zone
+            ctx.strokeStyle = '#ff0000';
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            prohibitedPoints.forEach((pt, i) => {
+                const x = (pt[0] - cropX) * displayScaleX;
+                const y = (pt[1] - cropY) * displayScaleY;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+
+            // Draw scale area
+            ctx.strokeStyle = '#ffff00';
+            ctx.fillStyle = 'rgba(255, 255, 0, 0.15)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            scalePoints.forEach((pt, i) => {
+                const x = (pt[0] - cropX) * displayScaleX;
+                const y = (pt[1] - cropY) * displayScaleY;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+
+            // Show config preview
+            document.getElementById('configPreview').textContent = JSON.stringify(config, null, 2);
+        }
+
+        function saveConfig() {
+            const configJson = JSON.stringify(config, null, 2);
+            const filename = `wb${config.weighbridge_id}_single_cam_roi.json`;
+
+            // Create download link
+            const blob = new Blob([configJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // Show summary
+            document.getElementById('summaryInfo').innerHTML = `
+                <p><strong>شماره باسکول:</strong> ${config.weighbridge_id}</p>
+                <p><strong>نام باسکول:</strong> ${config.weighbridge_name}</p>
+                <p><strong>اندازه تصویر اصلی:</strong> ${config.original_image_size[0]}x${config.original_image_size[1]}</p>
+                <p><strong>ناحیه کراپ:</strong> ${config.crop_roi.width}x${config.crop_roi.height} (از [${config.crop_roi.x1}, ${config.crop_roi.y1}])</p>
+                <p><strong>نقاط ناحیه باسکول:</strong> ${config.areas.scale_area.num_points}</p>
+                <p><strong>نقاط منطقه ممنوع:</strong> ${config.areas.prohibited_zone.num_points}</p>
+            `;
+
+            document.getElementById('downloadInfo').innerHTML = `
+                <p>✅ فایل <code>${filename}</code> دانلود شد.</p>
+                <p>⚠️ این فایل را در پوشه <code>configs/</code> قرار دهید.</p>
+                <p>📋 مسیر نهایی: <code>configs/${filename}</code></p>
+            `;
+
+            goToStep(7);
+        }
+
+        // Auto-setup canvases when entering steps
+        window.addEventListener('DOMContentLoaded', function() {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.target.classList.contains('active')) {
+                        const stepId = mutation.target.id;
+                        if (stepId === 'step4') {
+                            setupScaleCanvas();
+                        } else if (stepId === 'step5') {
+                            setupProhibitedCanvas();
+                        } else if (stepId === 'step6') {
+                            setupFinalCanvas();
+                        }
+                    }
+                });
+            });
+
+            document.querySelectorAll('.step').forEach(step => {
+                observer.observe(step, { attributes: true, attributeFilter: ['class'] });
+            });
+        });
+    </script>
+</body>
+</html>

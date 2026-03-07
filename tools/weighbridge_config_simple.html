@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ابزار تنظیم باسکول - Weighbridge Configuration (No Crop)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        #canvas {
+            border: 3px solid #667eea;
+            cursor: crosshair;
+            max-width: 100%;
+            display: block;
+            margin: 20px auto;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ffc107;
+        }
+
+        .point-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .point-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 ابزار تنظیم باسکول</h1>
+            <p>Weighbridge Configuration Tool (Direct - No Crop)</p>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: Basic Info -->
+            <div id="step1" class="step active">
+                <div class="info-box">
+                    <h2>مرحله 1: اطلاعات پایه</h2>
+                    <p>لطفاً اطلاعات باسکول را وارد کنید</p>
+                </div>
+
+                <div class="form-group">
+                    <label>شماره باسکول:</label>
+                    <select id="weighbridgeId">
+                        <option value="1">باسکول 1</option>
+                        <option value="3">باسکول 3</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>انتخاب تصویر (1920x1080):</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+
+                <button class="btn btn-primary" onclick="loadImage()">ادامه →</button>
+            </div>
+
+            <!-- Step 2: Draw Scale Area (Yellow) -->
+            <div id="step2" class="step">
+                <div class="info-box">
+                    <h2>مرحله 2: رسم ناحیه باسکول (خطوط زرد)</h2>
+                    <div class="instructions">
+                        <p><strong>دستورالعمل:</strong></p>
+                        <ul>
+                            <li>با کلیک روی تصویر، نقاط چندضلعی ناحیه باسکول را مشخص کنید</li>
+                            <li>این ناحیه با خطوط زرد نمایش داده می‌شود</li>
+                            <li>برای پایان، دکمه "اتمام رسم" را بزنید</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <canvas id="canvas"></canvas>
+
+                <div class="info-box">
+                    <h3>نقاط ثبت شده: <span id="scalePointCount">0</span></h3>
+                    <div id="scalePointList" class="point-list"></div>
+                </div>
+
+                <button class="btn btn-warning" onclick="undoLastPoint('scale')">حذف آخرین نقطه</button>
+                <button class="btn btn-danger" onclick="clearPoints('scale')">پاک کردن همه</button>
+                <button class="btn btn-success" onclick="finishScaleArea()">اتمام رسم →</button>
+            </div>
+
+            <!-- Step 3: Draw Prohibited Zone (Red) -->
+            <div id="step3" class="step">
+                <div class="info-box">
+                    <h2>مرحله 3: رسم منطقه ممنوع (خطوط قرمز)</h2>
+                    <div class="instructions">
+                        <p><strong>دستورالعمل:</strong></p>
+                        <ul>
+                            <li>با کلیک روی تصویر، نقاط چندضلعی منطقه ممنوع را مشخص کنید</li>
+                            <li>این ناحیه با خطوط قرمز نمایش داده می‌شود</li>
+                            <li>معمولاً این ناحیه بزرگتر از ناحیه باسکول است</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <canvas id="canvas2"></canvas>
+
+                <div class="info-box">
+                    <h3>نقاط ثبت شده: <span id="prohibitedPointCount">0</span></h3>
+                    <div id="prohibitedPointList" class="point-list"></div>
+                </div>
+
+                <button class="btn btn-warning" onclick="undoLastPoint('prohibited')">حذف آخرین نقطه</button>
+                <button class="btn btn-danger" onclick="clearPoints('prohibited')">پاک کردن همه</button>
+                <button class="btn btn-success" onclick="finishProhibitedZone()">اتمام و ذخیره →</button>
+            </div>
+
+            <!-- Step 4: Summary -->
+            <div id="step4" class="step">
+                <div class="info-box">
+                    <h2>✅ خلاصه تنظیمات</h2>
+                    <div id="summaryContent"></div>
+                </div>
+
+                <button class="btn btn-success" onclick="downloadConfig()">💾 دانلود فایل تنظیمات</button>
+                <button class="btn btn-primary" onclick="location.reload()">🔄 شروع مجدد</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let config = {
+            weighbridge_id: 1,
+            weighbridge_name: "باسکول 1",
+            camera: "UP",
+            original_image_size: [1920, 1080],
+            areas: {
+                scale_area: {
+                    name: "Scale Area",
+                    name_fa: "ناحیه باسکول",
+                    points: []
+                },
+                prohibited_zone: {
+                    name: "Prohibited Zone",
+                    name_fa: "منطقه ممنوع",
+                    points: []
+                }
+            }
+        };
+
+        let currentImage = null;
+        let canvas = null;
+        let ctx = null;
+        let currentMode = 'scale'; // 'scale' or 'prohibited'
+
+        function loadImage() {
+            const weighbridgeId = parseInt(document.getElementById('weighbridgeId').value);
+            const imageInput = document.getElementById('imageInput');
+
+            if (!imageInput.files || !imageInput.files[0]) {
+                alert('لطفاً یک تصویر انتخاب کنید');
+                return;
+            }
+
+            config.weighbridge_id = weighbridgeId;
+            config.weighbridge_name = `باسکول ${weighbridgeId}`;
+
+            const file = imageInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Resize image to 1920x1080 if needed
+                    if (img.width !== 1920 || img.height !== 1080) {
+                        alert(`تصویر باید 1920x1080 باشد. اندازه فعلی: ${img.width}x${img.height}\nتصویر به 1920x1080 تبدیل می‌شود.`);
+                    }
+
+                    currentImage = img;
+                    config.original_image_size = [1920, 1080];
+
+                    // Show step 2
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step2').classList.add('active');
+
+                    setupCanvas('canvas', 'scale');
+                };
+                img.src = e.target.result;
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function setupCanvas(canvasId, mode) {
+            currentMode = mode;
+            canvas = document.getElementById(canvasId);
+
+            if (!canvas) {
+                console.error('Canvas not found:', canvasId);
+                return;
+            }
+
+            ctx = canvas.getContext('2d');
+
+            // Set canvas size to 1920x1080
+            canvas.width = 1920;
+            canvas.height = 1080;
+
+            // Set display size to fit screen while maintaining aspect ratio
+            const maxWidth = Math.min(1600, window.innerWidth - 100);
+            const maxHeight = Math.min(900, window.innerHeight - 400);
+            const scale = Math.min(maxWidth / 1920, maxHeight / 1080);
+            canvas.style.width = (1920 * scale) + 'px';
+            canvas.style.height = (1080 * scale) + 'px';
+
+            // Draw image and existing polygons
+            redrawCanvas();
+
+            // Add click handler
+            canvas.onclick = function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+
+                const x = Math.round((e.clientX - rect.left) * scaleX);
+                const y = Math.round((e.clientY - rect.top) * scaleY);
+
+                if (currentMode === 'scale') {
+                    config.areas.scale_area.points.push([x, y]);
+                    updatePointList('scale');
+                } else if (currentMode === 'prohibited') {
+                    config.areas.prohibited_zone.points.push([x, y]);
+                    updatePointList('prohibited');
+                }
+
+                redrawCanvas();
+            };
+        }
+
+        function redrawCanvas() {
+            // Clear and redraw image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(currentImage, 0, 0, 1920, 1080);
+
+            // Draw scale area (yellow)
+            if (config.areas.scale_area.points.length > 0) {
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                ctx.moveTo(config.areas.scale_area.points[0][0], config.areas.scale_area.points[0][1]);
+                for (let i = 1; i < config.areas.scale_area.points.length; i++) {
+                    ctx.lineTo(config.areas.scale_area.points[i][0], config.areas.scale_area.points[i][1]);
+                }
+                if (config.areas.scale_area.points.length > 2) {
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.stroke();
+
+                // Draw points
+                ctx.fillStyle = 'yellow';
+                config.areas.scale_area.points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point[0], point[1], 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+
+            // Draw prohibited zone (red)
+            if (config.areas.prohibited_zone.points.length > 0) {
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.15)';
+                ctx.lineWidth = 3;
+
+                ctx.beginPath();
+                ctx.moveTo(config.areas.prohibited_zone.points[0][0], config.areas.prohibited_zone.points[0][1]);
+                for (let i = 1; i < config.areas.prohibited_zone.points.length; i++) {
+                    ctx.lineTo(config.areas.prohibited_zone.points[i][0], config.areas.prohibited_zone.points[i][1]);
+                }
+                if (config.areas.prohibited_zone.points.length > 2) {
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.stroke();
+
+                // Draw points
+                ctx.fillStyle = 'red';
+                config.areas.prohibited_zone.points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point[0], point[1], 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+        }
+
+        function updatePointList(mode) {
+            let points, countElement, listElement;
+
+            if (mode === 'scale') {
+                points = config.areas.scale_area.points;
+                countElement = document.getElementById('scalePointCount');
+                listElement = document.getElementById('scalePointList');
+            } else {
+                points = config.areas.prohibited_zone.points;
+                countElement = document.getElementById('prohibitedPointCount');
+                listElement = document.getElementById('prohibitedPointList');
+            }
+
+            countElement.textContent = points.length;
+            listElement.innerHTML = points.map((p, i) =>
+                `<div class="point-item">${i + 1}. [${p[0]}, ${p[1]}]</div>`
+            ).join('');
+        }
+
+        function undoLastPoint(mode) {
+            if (mode === 'scale' && config.areas.scale_area.points.length > 0) {
+                config.areas.scale_area.points.pop();
+                updatePointList('scale');
+            } else if (mode === 'prohibited' && config.areas.prohibited_zone.points.length > 0) {
+                config.areas.prohibited_zone.points.pop();
+                updatePointList('prohibited');
+            }
+            redrawCanvas();
+        }
+
+        function clearPoints(mode) {
+            if (confirm('آیا مطمئن هستید که می‌خواهید همه نقاط را پاک کنید؟')) {
+                if (mode === 'scale') {
+                    config.areas.scale_area.points = [];
+                    updatePointList('scale');
+                } else {
+                    config.areas.prohibited_zone.points = [];
+                    updatePointList('prohibited');
+                }
+                redrawCanvas();
+            }
+        }
+
+        function finishScaleArea() {
+            if (config.areas.scale_area.points.length < 3) {
+                alert('لطفاً حداقل 3 نقطه مشخص کنید');
+                return;
+            }
+
+            config.areas.scale_area.num_points = config.areas.scale_area.points.length;
+
+            // Show step 3
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.add('active');
+
+            setupCanvas('canvas2', 'prohibited');
+        }
+
+        function finishProhibitedZone() {
+            if (config.areas.prohibited_zone.points.length < 3) {
+                alert('لطفاً حداقل 3 نقطه مشخص کنید');
+                return;
+            }
+
+            config.areas.prohibited_zone.num_points = config.areas.prohibited_zone.points.length;
+
+            // Show summary
+            showSummary();
+        }
+
+        function showSummary() {
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step4').classList.add('active');
+
+            const summaryHTML = `
+                <h3>📋 اطلاعات پایه</h3>
+                <p><strong>باسکول:</strong> ${config.weighbridge_name}</p>
+                <p><strong>دوربین:</strong> ${config.camera}</p>
+                <p><strong>اندازه تصویر:</strong> ${config.original_image_size[0]}x${config.original_image_size[1]}</p>
+
+                <h3>🟡 ناحیه باسکول (خطوط زرد)</h3>
+                <p><strong>تعداد نقاط:</strong> ${config.areas.scale_area.num_points}</p>
+
+                <h3>🔴 منطقه ممنوع (خطوط قرمز)</h3>
+                <p><strong>تعداد نقاط:</strong> ${config.areas.prohibited_zone.num_points}</p>
+
+                <h3>✅ آماده ذخیره</h3>
+                <p>فایل تنظیمات به نام <code>wb${config.weighbridge_id}_single_cam_roi.json</code> دانلود خواهد شد.</p>
+            `;
+
+            document.getElementById('summaryContent').innerHTML = summaryHTML;
+        }
+
+        async function downloadConfig() {
+            const filename = `wb${config.weighbridge_id}_single_cam_roi.json`;
+            const jsonStr = JSON.stringify(config, null, 2);
+
+            // Try to save directly to configs folder using File System Access API
+            try {
+                // Request directory handle for configs folder
+                const dirHandle = await window.showDirectoryPicker({
+                    startIn: 'downloads',
+                    mode: 'readwrite'
+                });
+
+                // Create file in the selected directory
+                const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(jsonStr);
+                await writable.close();
+
+                alert(`✅ فایل ${filename} با موفقیت در پوشه انتخاب شده ذخیره شد!`);
+            } catch (err) {
+                // If File System Access API is not available or user cancelled,
+                // fall back to regular download
+                console.log('Using fallback download method:', err);
+
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                alert(`✅ فایل ${filename} دانلود شد!\n\nلطفاً فایل را به پوشه configs/ پروژه منتقل کنید.`);
+            }
+        }
+    </script>
+</body>
+</html>

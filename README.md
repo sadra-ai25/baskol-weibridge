@@ -1,284 +1,139 @@
-# Weighbridge Monitoring System - API Documentation
+# Weighbridge Monitoring System
 
-## نظرة عامة (Overview)
+![Python](https://img.shields.io/badge/Python-3.10-blue) ![Flask](https://img.shields.io/badge/Flask-2.x-lightgrey) ![YOLOv11](https://img.shields.io/badge/YOLOv11-Ultralytics-red) ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
 
-سیستم مانیتورینگ باسکول با قابلیت تشخیص خودکار وضعیت خودروها و اعتبارسنجی تصاویر
+AI-powered weighbridge monitoring system that validates vehicle presence on a scale using computer vision. Sends a base64-encoded camera snapshot to the API and receives a validation result confirming whether a vehicle is correctly positioned on the weighbridge.
 
-## ساختار پروژه (Project Structure)
+## Features
+
+- **Automatic vehicle detection** — YOLOv11 detects vehicles and validates their position on the scale platform
+- **Multi-weighbridge support** — configurable per-weighbridge ROI polygons (wb1, wb3)
+- **Base64 image API** — accepts images as base64 strings or file uploads (up to 32 MB)
+- **ROI polygon validation** — checks whether the detected vehicle overlaps with the weighbridge platform region
+- **Batch processing** — batch endpoint for processing multiple images at once
+- **Annotation output** — returns annotated images showing detections and ROI overlays
+- **CLI tools** — helper scripts to define and update ROI regions from sample images
+
+## Tech Stack
+
+| Component | Technology |
+|---|---|
+| AI Model | YOLOv11 (Ultralytics) |
+| API Server | Flask |
+| Image Processing | OpenCV, NumPy |
+| Containerization | Docker Compose |
+
+## Architecture
 
 ```
-├── src/
-│   ├── api.py                      # REST API با پشتیبانی base64
-│   ├── simple_validator.py         # Validation logic اصلی
-│   ├── object_detector.py          # YOLO object detection
-│   └── image_utils.py              # Image processing utilities
-├── configs/
-│   ├── wb1_single_cam_roi.json    # تنظیمات باسکول 1
-│   └── wb3_single_cam_roi.json    # تنظیمات باسکول 3 (برای نرم‌افزار ID=2)
-├── weights/
-│   └── best.pt                     # YOLOv11 model weights
-├── tools/
-│   ├── weighbridge_config_simple.html    # ابزار تنظیم polygon‌ها
-│   ├── weighbridge_config_master.html
-│   └── weighbridge_config_master1.html
-├── batch_simple.py                 # اسکریپت پردازش دسته‌ای
-├── test_api.py                     # اسکریپت تست API
-├── docker-compose.yml              # Docker orchestration
-└── Dockerfile                      # Container configuration
-
+Weighbridge Scale Camera
+         │
+         │  (snapshot)
+         ▼
+  Weighbridge Software  ──POST /validate──▶  Flask API
+                                                  │
+                                            ObjectDetector (YOLOv11)
+                                                  │  detect vehicles
+                                            SimpleValidator
+                                                  │  check ROI polygon
+                                                  ▼
+                                           JSON Response
+                                      { valid: true/false,
+                                        vehicle_detected: true,
+                                        annotated_image: "base64..." }
 ```
 
-## نصب و راه‌اندازی (Installation)
+## Prerequisites
 
-### روش 1: استفاده از Docker (توصیه می‌شود)
+- Docker & Docker Compose
+- YOLOv11 model weights at `weights/best.pt`
+- Weighbridge ROI config at `configs/weighbridges.json`
+
+## Installation & Setup
 
 ```bash
-# ساخت و اجرای container
-docker-compose up -d --build
+# 1. Clone the repository
+git clone https://github.com/sadra-ai25/baskol-weibridge.git
+cd baskol-weibridge
 
-# مشاهده لاگ‌ها
-docker-compose logs -f
+# 2. Place model weights
+mkdir -p weights
+cp /path/to/best.pt weights/
 
-# توقف container
-docker-compose down
+# 3. Configure weighbridge ROIs
+mkdir -p configs
+# Use the CLI tool to define ROI from a sample image:
+python tools/extract_polygon_points.py --image sample/wb1_sample.jpg
+
+# 4. Start the service
+docker compose up -d --build
 ```
 
-API روی پورت 4001 در دسترس خواهد بود: `http://localhost:4001`
+## ROI Configuration
 
-### روش 2: اجرای مستقیم
-
-```bash
-# نصب dependencies
-pip install -r requirements.txt
-
-# اجرای API
-python3 src/api.py
-```
-
-## API Endpoints
-
-### 1. Health Check
-
-**GET** `/health`
-
-```bash
-curl http://localhost:4001/health
-```
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "service": "weighbridge-validation-api",
-  "version": "2.0.0"
-}
-```
-
-### 2. Image Validation
-
-**POST** `/validate`
-
-**Request:**
-```json
-{
-  "weighbridge_id": 1,
-  "image_base64": "base64_encoded_image_string"
-}
-```
-
-**Response:**
-```json
-{
-  "valid": true,
-  "description": "VALID - Vehicle properly positioned in yellow area",
-  "processed_image_base64": "base64_encoded_annotated_image_string"
-}
-```
-
-**نکات مهم:**
-- `weighbridge_id`: فقط 1 یا 3 قابل قبول است
-  - **1** → استفاده از کانفیگ `wb1_single_cam_roi.json`
-  - **2** → استفاده از کانفیگ `wb3_single_cam_roi.json` (wb3)
-- `image_base64`: تصویر به فرمت base64 (با یا بدون header)
-- `processed_image_base64`: تصویر پردازش شده با annotations
-
-## تست با Python Script
-
-```bash
-# تست با تصویر نمونه
-python test_api.py baskol-test/bask2_up_20251202_110500.jpg 2
-
-# استفاده کامل
-python test_api.py <image_path> [weighbridge_id] [api_url]
-```
-
-## تست با cURL
-
-```bash
-# Encode image to base64
-IMAGE_BASE64=$(base64 -w 0 baskol-test/bask2_up_20251202_110500.jpg)
-
-# Send request
-curl -X POST http://localhost:4001/validate \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"weighbridge_id\": 2,
-    \"image_base64\": \"$IMAGE_BASE64\"
-  }"
-```
-
-## تست با Postman
-
-1. ایجاد یک **POST** request به `http://localhost:4001/validate`
-2. در تب **Body**، گزینه **raw** و **JSON** را انتخاب کنید
-3. محتوای زیر را وارد کنید:
+Define the weighbridge platform as a polygon in `configs/weighbridges.json`:
 
 ```json
 {
-  "weighbridge_id": 2,
-  "image_base64": "<YOUR_BASE64_IMAGE_STRING>"
-}
-```
-
-4. دکمه **Send** را بزنید
-
-## قوانین اعتبارسنجی (Validation Rules)
-
-API بر اساس قوانین زیر تصاویر را اعتبارسنجی می‌کند:
-
-### 1. تشخیص خطوط زرد
-- Threshold: 1% از سطح polygon
-- اگر خطوط زرد قابل رؤیت باشد → استفاده از **scale area (yellow)**
-- اگر خطوط زرد نامرئی باشد → استفاده از **prohibited zone (red)**
-
-### 2. تعداد خودرو
-- باید دقیقاً **1 خودرو** در تصویر باشد
-- خودروهای مجاز: car, truck, bus
-
-### 3. اشیاء ممنوعه
-- موتورسیکلت، دوچرخه → **INVALID**
-- شخص (person) → **INVALID**
-
-### 4. موقعیت خودرو
-
-#### برای Yellow Scale Area:
-- هیچ کدام از گوشه‌های bounding box نباید **بیش از 60 پیکسل** خارج از polygon باشد
-- اگر 2 یا بیشتر گوشه بیش از 60px خارج باشد → **INVALID**
-
-#### برای Red Prohibited Zone - خودروهای کوچک (<92%):
-- هیچ کدام از گوشه‌های bounding box نباید **بیش از 40 پیکسل** خارج از polygon باشد
-- اگر 2 یا بیشتر گوشه بیش از 40px خارج باشد → **INVALID**
-
-#### برای Red Prohibited Zone - خودروهای بزرگ (≥92%):
-- مرکز خودرو باید در **margin عمودی 200 پیکسلی** قرار گیرد
-- margin در مرکز prohibited zone قرار دارد
-- اگر مرکز خودرو خارج از margin باشد → **INVALID**
-
-## ابزار تنظیم Polygon‌ها
-
-برای تنظیم مناطق (scale area و prohibited zone):
-
-```bash
-# باز کردن ابزار HTML در مرورگر
-firefox weighbridge_config_simple.html
-```
-
-این ابزار امکان می‌دهد:
-- رسم polygon‌های زرد و قرمز روی تصویر 1920x1080
-- ذخیره مختصات در فایل JSON
-- تست مستقیم validation
-
-## فایل‌های کانفیگ
-
-### نمونه `wb1_single_cam_roi.json`:
-
-```json
-{
-  "weighbridge_name": "Baskol 1",
-  "camera": "UP",
-  "areas": {
-    "scale_area": {
-      "points": [[x1, y1], [x2, y2], ...]
-    },
-    "prohibited_zone": {
-      "points": [[x1, y1], [x2, y2], ...]
-    }
+  "wb1": {
+    "roi_polygon": [[100, 200], [800, 200], [800, 600], [100, 600]],
+    "camera_id": "cam_wb1"
+  },
+  "wb3": {
+    "roi_polygon": [[150, 180], [820, 180], [820, 580], [150, 580]],
+    "camera_id": "cam_wb3"
   }
 }
 ```
 
-## خطاها و عیب‌یابی
+## API Endpoints
 
-### خطای "Config file not found"
-- مطمئن شوید فایل‌های `wb1_single_cam_roi.json` و `wb3_single_cam_roi.json` در پوشه `configs/` موجود هستند
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/validate` | Validate vehicle presence from image |
+| `POST` | `/batch` | Batch validate multiple images |
+| `GET` | `/health` | Service health check |
 
-### خطای "Invalid base64 image"
-- مطمئن شوید تصویر به درستی به base64 تبدیل شده است
-- API از header دار و بدون header پشتیبانی می‌کند
+### Example: Validate via base64
 
-### خطای "Model not found"
-- مطمئن شوید فایل `weights/best.pt` موجود است
-- اگر ندارید، مدل YOLO را دانلود کنید
+```bash
+curl -X POST http://localhost:4001/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "weighbridge_id": 1,
+    "image": "<base64-encoded-image>"
+  }'
+```
 
-## Performance Notes
+### Response
 
-- تصاویر 1920x1080 پردازش می‌شوند (بدون cropping)
-- زمان پردازش: ~1-3 ثانیه بر روی CPU
-- حداکثر حجم تصویر: 32MB
-
-## نمونه کد برای نرم‌افزار
-
-### C# Example
-
-```csharp
-using System.Net.Http;
-using System.Text;
-
-public async Task<ValidationResult> ValidateImage(int weighbridgeId, byte[] imageBytes)
+```json
 {
-    var base64Image = Convert.ToBase64String(imageBytes);
-    
-    var payload = new {
-        weighbridge_id = weighbridgeId,
-        image_base64 = base64Image
-    };
-    
-    var json = JsonConvert.SerializeObject(payload);
-    var content = new StringContent(json, Encoding.UTF8, "application/json");
-    
-    var response = await httpClient.PostAsync("http://localhost:4001/validate", content);
-    var result = await response.Content.ReadAsStringAsync();
-    
-    return JsonConvert.DeserializeObject<ValidationResult>(result);
+  "valid": true,
+  "vehicle_detected": true,
+  "vehicle_on_scale": true,
+  "confidence": 0.91,
+  "annotated_image": "<base64-encoded-annotated-image>"
 }
 ```
 
-### Python Example
+## CLI Tools
 
-```python
-import requests
-import base64
+```bash
+# Define ROI polygon interactively from image
+python tools/extract_polygon_points.py --image sample/wb1.jpg
 
-def validate_image(weighbridge_id, image_path):
-    # Encode image
-    with open(image_path, 'rb') as f:
-        image_base64 = base64.b64encode(f.read()).decode('utf-8')
-    
-    # Prepare request
-    payload = {
-        "weighbridge_id": weighbridge_id,
-        "image_base64": image_base64
-    }
-    
-    # Send request
-    response = requests.post(
-        'http://localhost:4001/validate',
-        json=payload
-    )
-    
-    return response.json()
+# Update ROI config from a new reference image
+python tools/update_roi_from_image.py --wb wb1 --image sample/new_wb1.jpg
+
+# Crop and inspect ROI region
+python tools/crop_roi_cli.py --wb wb1 --image sample/wb1.jpg
 ```
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first.
 
 ## License
 
-Internal use only - Weighbridge Monitoring System
+MIT

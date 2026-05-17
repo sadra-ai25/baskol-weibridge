@@ -9,7 +9,7 @@ AI-powered weighbridge monitoring system that validates vehicle presence on a sc
 - **Automatic vehicle detection** — YOLOv11 detects vehicles and validates their position on the scale platform
 - **Multi-weighbridge support** — configurable per-weighbridge ROI polygons (wb1, wb3)
 - **Base64 image API** — accepts images as base64 strings or file uploads (up to 32 MB)
-- **ROI polygon validation** — checks whether the detected vehicle overlaps with the weighbridge platform region
+- **Yellow-line-aware validation** — detects scale platform by yellow boundary lines; falls back to prohibited-zone check when large vehicles (trailers) obscure the lines
 - **Batch processing** — batch endpoint for processing multiple images at once
 - **Annotation output** — returns annotated images showing detections and ROI overlays
 - **CLI tools** — helper scripts to define and update ROI regions from sample images
@@ -90,9 +90,10 @@ Define the weighbridge platform as a polygon in `configs/weighbridges.json`:
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/validate` | Validate vehicle presence from image |
-| `POST` | `/batch` | Batch validate multiple images |
+| `POST` | `/validate` | Validate vehicle presence from base64 image |
 | `GET` | `/health` | Service health check |
+
+> Only `weighbridge_id` values `1` and `3` are configured (`wb1`, `wb3`). IDs map to per-weighbridge ROI configs.
 
 ### Example: Validate via base64
 
@@ -101,7 +102,7 @@ curl -X POST http://localhost:4001/validate \
   -H "Content-Type: application/json" \
   -d '{
     "weighbridge_id": 1,
-    "image": "<base64-encoded-image>"
+    "image_base64": "<base64-encoded-image>"
   }'
 ```
 
@@ -110,10 +111,8 @@ curl -X POST http://localhost:4001/validate \
 ```json
 {
   "valid": true,
-  "vehicle_detected": true,
-  "vehicle_on_scale": true,
-  "confidence": 0.91,
-  "annotated_image": "<base64-encoded-annotated-image>"
+  "description": "VALID - Vehicle properly positioned in yellow area",
+  "processed_image_base64": "<base64-encoded-annotated-image>"
 }
 ```
 
